@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Brutal Quotes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── CSS Variables ─────────────────────────────────────────── */
+    :root {
+      --yellow:   #FFED47;
+      --red:      #FF4B4B;
+      --blue:     #2D5BFF;
+      --black:    #1A1A1A;
+      --offwhite: #F8F5E8;
+      --gray:     #888888;
+
+      /* Neo defaults */
+      --bg:           var(--yellow);
+      --card-bg:      #FFFFFF;
+      --text:         var(--black);
+      --text-muted:   #555555;
+      --border:       var(--black);
+      --accent:       var(--red);
+      --tag-bg:       var(--black);
+      --tag-text:     var(--yellow);
+      --shadow:       6px 6px 0px var(--black);
+      --shadow-lg:    10px 10px 0px var(--black);
+      --border-width: 3px;
+      --radius:       0px;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body:    'IBM Plex Mono', monospace;
+      --font-quote:   'Playfair Display', serif;
+
+      --transition: 0.15s ease;
+    }
+
+    /* ─── Brutalism override ────────────────────────────────────── */
+    body.brutal {
+      --bg:           #FFFFFF;
+      --card-bg:      #FFFFFF;
+      --text:         #000000;
+      --text-muted:   #444444;
+      --border:       #000000;
+      --accent:       #000000;
+      --tag-bg:       #000000;
+      --tag-text:     #FFFFFF;
+      --shadow:       none;
+      --shadow-lg:    none;
+      --border-width: 2px;
+      --radius:       0px;
+      --font-display: 'IBM Plex Mono', monospace;
+      --font-body:    'IBM Plex Mono', monospace;
+      --font-quote:   'IBM Plex Mono', monospace;
+    }
+
+    /* ─── Reset & Base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      overflow-x: hidden;
+    }
+
+    /* ─── Noise texture overlay ─────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+    body.brutal::before { opacity: 0; }
+
+    /* ─── Layout ────────────────────────────────────────────────── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ─── Header ────────────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 52px;
+      flex-wrap: wrap;
+    }
+
+    .header-left {}
+
+    .site-title {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      line-height: 0.9;
+      letter-spacing: 0.02em;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+
+    body.brutal .site-title {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      letter-spacing: 0.1em;
+      line-height: 1.1;
+    }
+
+    .site-subtitle {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* ─── Mode toggle ───────────────────────────────────────────── */
+    .mode-toggle {
+      display: flex;
+      gap: 0;
+      border: var(--border-width) solid var(--border);
+      box-shadow: var(--shadow);
+      flex-shrink: 0;
+      margin-top: 8px;
+    }
+
+    .mode-btn {
+      background: var(--card-bg);
+      color: var(--text);
+      border: none;
+      padding: 10px 20px;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .mode-btn:first-child {
+      border-right: var(--border-width) solid var(--border);
+    }
+
+    .mode-btn.active {
+      background: var(--tag-bg);
+      color: var(--tag-text);
+    }
+
+    .mode-btn:hover:not(.active) {
+      background: var(--offwhite);
+    }
+
+    /* ─── Date strip ────────────────────────────────────────────── */
+    .date-strip {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .date-tag {
+      display: inline-block;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      font-family: var(--font-body);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+    }
+
+    .date-label {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+
+    /* ─── Quote card ────────────────────────────────────────────── */
+    .quote-card {
+      background: var(--card-bg);
+      border: var(--border-width) solid var(--border);
+      box-shadow: var(--shadow-lg);
+      padding: clamp(28px, 5vw, 56px);
+      position: relative;
+      margin-bottom: 32px;
+      transition: box-shadow var(--transition);
+    }
+
+    .quote-card::before {
+      content: '\201C';
+      font-family: var(--font-quote);
+      font-size: 10rem;
+      line-height: 1;
+      color: var(--yellow);
+      position: absolute;
+      top: -18px;
+      left: 24px;
+      opacity: 0.6;
+      pointer-events: none;
+      transition: color var(--transition);
+    }
+
+    body.brutal .quote-card::before {
+      content: '"';
+      font-family: monospace;
+      font-size: 4rem;
+      opacity: 0.15;
+      color: #000;
+      top: 8px;
+      left: 12px;
+    }
+
+    .quote-number {
+      font-family: var(--font-display);
+      font-size: 6rem;
+      line-height: 1;
+      color: var(--border);
+      opacity: 0.06;
+      position: absolute;
+      bottom: 16px;
+      right: 24px;
+      pointer-events: none;
+      user-select: none;
+      transition: opacity var(--transition);
+    }
+
+    body.brutal .quote-number { display: none; }
+
+    .quote-text {
+      font-family: var(--font-quote);
+      font-size: clamp(1.35rem, 3vw, 2rem);
+      font-style: italic;
+      font-weight: 700;
+      line-height: 1.45;
+      color: var(--text);
+      position: relative;
+      z-index: 1;
+      margin-bottom: 36px;
+      padding-top: 32px;
+    }
+
+    body.brutal .quote-text {
+      font-family: var(--font-body);
+      font-size: clamp(1rem, 2.2vw, 1.35rem);
+      font-style: normal;
+      font-weight: 400;
+      line-height: 1.7;
+      padding-top: 8px;
+    }
+
+    /* ─── Quote meta row ────────────────────────────────────────── */
+    .quote-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-top: var(--border-width) solid var(--border);
+      padding-top: 20px;
+    }
+
+    .quote-badge {
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .quote-badge span {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ─── Action buttons ────────────────────────────────────────── */
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 12px 22px;
+      border: var(--border-width) solid var(--border);
+      cursor: pointer;
+      background: var(--card-bg);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 8px 8px 0px var(--border);
+    }
+
+    .btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: 2px 2px 0px var(--border);
+    }
+
+    .btn.primary {
+      background: var(--tag-bg);
+      color: var(--tag-text);
+    }
+
+    .btn.accent {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--border);
+    }
+
+    body.brutal .btn:hover  { transform: none; box-shadow: none; background: #eee; }
+    body.brutal .btn:active { transform: none; box-shadow: none; }
+    body.brutal .btn.primary { background: #000; color: #fff; }
+    body.brutal .btn.accent  { background: #000; color: #fff; }
+
+    /* ─── Navigation (prev / next day) ─────────────────────────── */
+    .day-nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 8px 18px;
+      border: var(--border-width) solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .nav-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 8px 8px 0px var(--border);
+    }
+
+    .nav-btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: 1px 1px 0px var(--border);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: var(--shadow);
+    }
+
+    body.brutal .nav-btn:hover  { transform: none; box-shadow: none; }
+    body.brutal .nav-btn:active { transform: none; box-shadow: none; }
+
+    .nav-date-input {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 8px 14px;
+      border: var(--border-width) solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .nav-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ─── Theme preview strip ───────────────────────────────────── */
+    .wallpaper-section {
+      border: var(--border-width) solid var(--border);
+      background: var(--card-bg);
+      box-shadow: var(--shadow-lg);
+      padding: 28px;
+      margin-bottom: 48px;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      line-height: 1;
+    }
+
+    body.brutal .section-title {
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+    }
+
+    .section-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      letter-spacing: 0.04em;
+    }
+
+    .wallpaper-themes {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .theme-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .theme-swatch {
+      width: 72px;
+      height: 120px;
+      border: var(--border-width) solid var(--border);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+    }
+
+    .theme-swatch.swatch-neo   { background: #FFED47; }
+    .theme-swatch.swatch-dark  { background: #0D0D0D; }
+    .theme-swatch.swatch-brutal { background: #FFFFFF; }
+
+    .swatch-line {
+      width: 80%;
+      height: 5px;
+      margin: 2px 0;
+      border-radius: 1px;
+    }
+
+    .swatch-neo   .swatch-line { background: #1A1A1A; }
+    .swatch-dark  .swatch-line { background: #FFED47; }
+    .swatch-brutal .swatch-line { background: #000; }
+
+    .swatch-line.thin { height: 3px; opacity: 0.5; }
+
+    .theme-label {
+      font-family: var(--font-body);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .theme-dl-btn {
+      margin-top: 4px;
+      font-family: var(--font-body);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 5px 10px;
+      border: var(--border-width) solid var(--border);
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    /* ─── Shortcut Instructions ─────────────────────────────────── */
+    .shortcut-section {
+      border: var(--border-width) solid var(--border);
+      background: var(--card-bg);
+      box-shadow: var(--shadow-lg);
+      padding: 28px;
+      margin-bottom: 48px;
+    }
+
+    .steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-body {
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      color: var(--text);
+      line-height: 1.5;
+      padding-top: 4px;
+    }
+
+    .step-body strong {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    body.brutal .step-body strong { color: #000; }
+
+    .code-pill {
+      display: inline-block;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      font-family: var(--font-body);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      letter-spacing: 0.05em;
+      word-break: break-all;
+    }
+
+    /* ─── Endpoints reference ───────────────────────────────────── */
+    .endpoints {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .endpoint-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .endpoint-method {
+      flex-shrink: 0;
+      font-family: var(--font-body);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 4px 10px;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      align-self: flex-start;
+    }
+
+    .endpoint-url {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--text);
+      word-break: break-all;
+      flex: 1;
+    }
+
+    .endpoint-url em {
+      font-style: normal;
+      color: var(--text-muted);
+    }
+
+    /* ─── Footer ────────────────────────────────────────────────── */
+    footer {
+      border-top: var(--border-width) solid var(--border);
+      padding-top: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-text {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    .footer-link {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+      border-bottom: 2px solid var(--accent);
+    }
+
+    /* ─── Toast notification ────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 12px 20px;
+      border: var(--border-width) solid var(--border);
+      box-shadow: var(--shadow);
+      transform: translateY(80px);
+      opacity: 0;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* ─── Loading state ─────────────────────────────────────────── */
+    .loading-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      opacity: 0.7;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    /* ─── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .wrapper { padding: 24px 16px 60px; }
+      header { margin-bottom: 32px; }
+      .wallpaper-themes { gap: 8px; }
+      .theme-swatch { width: 60px; height: 100px; }
+      .actions { gap: 8px; }
+      .btn { padding: 10px 16px; }
+    }
+  </style>
+</head>
+<body class="neo">
+
+<div class="wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header>
+    <div class="header-left">
+      <h1 class="site-title">Daily<br>Brutal<br>Quotes</h1>
+      <p class="site-subtitle">One quote. Every day. No excuses.</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Display mode">
+      <button class="mode-btn active" id="btn-neo" onclick="setMode('neo')">Neo</button>
+      <button class="mode-btn"        id="btn-brutal" onclick="setMode('brutal')">Brutal</button>
+    </div>
+  </header>
+
+  <!-- ── Date strip ─────────────────────────────────────── -->
+  <div class="date-strip">
+    <span class="date-tag" id="quote-num-tag">No. —</span>
+    <span class="date-label" id="date-display">Loading…</span>
+  </div>
+
+  <!-- ── Quote card ─────────────────────────────────────── -->
+  <div class="quote-card" id="quote-card">
+    <div class="quote-number" id="quote-bg-num">—</div>
+    <p class="quote-text" id="quote-text">Loading today's quote…</p>
+    <div class="quote-meta">
+      <span class="quote-badge">
+        Quote <span id="quote-num-inline">—</span> of <span id="quote-total">365</span>
+      </span>
+      <span class="quote-badge" id="quote-source">Daily Brutal Quotes</span>
+    </div>
+  </div>
+
+  <!-- ── Actions ────────────────────────────────────────── -->
+  <div class="actions">
+    <button class="btn primary" onclick="copyQuote()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy Quote
+    </button>
+    <a class="btn" id="dl-neo"    href="/api/image?theme=neo"    download="quote-neo.png"    target="_blank">↓ Neo Wallpaper</a>
+    <a class="btn" id="dl-dark"   href="/api/image?theme=dark"   download="quote-dark.png"   target="_blank">↓ Dark Wallpaper</a>
+    <a class="btn" id="dl-brutal" href="/api/image?theme=brutal" download="quote-brutal.png" target="_blank">↓ Brutal Wallpaper</a>
+  </div>
+
+  <!-- ── Day navigation ─────────────────────────────────── -->
+  <div class="day-nav">
+    <button class="nav-btn" id="btn-prev" onclick="shiftDay(-1)">← Prev</button>
+    <button class="nav-btn" id="btn-today" onclick="goToday()">Today</button>
+    <button class="nav-btn" id="btn-next" onclick="shiftDay(1)">Next →</button>
+    <input type="date" class="nav-date-input" id="date-picker" onchange="goToDate(this.value)" />
+    <span class="nav-label">Jump to date</span>
+  </div>
+
+  <!-- ── Wallpaper download section ─────────────────────── -->
+  <div class="wallpaper-section">
+    <div class="section-title">iPhone Wallpapers</div>
+    <p class="section-sub">1170×2532 px · iPhone 14 compatible · 3 themes</p>
+
+    <div class="wallpaper-themes">
+      <div class="theme-btn">
+        <div class="theme-swatch swatch-neo">
+          <div class="swatch-line"></div>
+          <div class="swatch-line thin"></div>
+          <div class="swatch-line thin"></div>
+          <div class="swatch-line"></div>
+        </div>
+        <div class="theme-label">Neo</div>
+        <a class="theme-dl-btn" id="dl-neo-2" href="/api/image?theme=neo" target="_blank">Get</a>
+      </div>
+      <div class="theme-btn">
+        <div class="theme-swatch swatch-dark">
+          <div class="swatch-line"></div>
+          <div class="swatch-line thin"></div>
+          <div class="swatch-line thin"></div>
+          <div class="swatch-line"></div>
+        </div>
+        <div class="theme-label">Dark</div>
+        <a class="theme-dl-btn" id="dl-dark-2" href="/api/image?theme=dark" target="_blank">Get</a>
+      </div>
+      <div class="theme-btn">
+        <div class="theme-swatch swatch-brutal">
+          <div class="swatch-line"></div>
+          <div class="swatch-line thin"></div>
+          <div class="swatch-line thin"></div>
+          <div class="swatch-line"></div>
+        </div>
+        <div class="theme-label">Brutal</div>
+        <a class="theme-dl-btn" id="dl-brutal-2" href="/api/image?theme=brutal" target="_blank">Get</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── iPhone Shortcuts instructions ──────────────────── -->
+  <div class="shortcut-section">
+    <div class="section-title">iPhone Shortcut Setup</div>
+    <p class="section-sub">Automate your lock screen — runs daily, zero effort.</p>
+
+    <ol class="steps">
+      <li class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          Open the <strong>Shortcuts</strong> app on your iPhone and tap <strong>+</strong> to create a new shortcut.
+        </div>
+      </li>
+      <li class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          Add action: <strong>Get Contents of URL</strong><br>
+          Set the URL to:<br>
+          <span class="code-pill" id="shortcut-url">https://your-domain.vercel.app/api/image?theme=neo</span>
+        </div>
+      </li>
+      <li class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          Add action: <strong>Set Wallpaper</strong><br>
+          Input: result from step 2 · Position: <strong>Lock Screen</strong>
+        </div>
+      </li>
+      <li class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          Tap the shortcut name → <strong>Automation</strong> → Add automation trigger.<br>
+          Set it to run <strong>Every Day</strong> at your preferred time (e.g., 7:00 AM).
+        </div>
+      </li>
+      <li class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          Disable <strong>"Ask Before Running"</strong> so it runs silently in the background.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ── API endpoints ───────────────────────────────────── -->
+  <div class="shortcut-section">
+    <div class="section-title">API Endpoints</div>
+    <p class="section-sub">Public · No auth required · CORS enabled</p>
+
+    <div class="endpoints">
+      <div class="endpoint-row">
+        <span class="endpoint-method">GET</span>
+        <div class="endpoint-url">
+          <code>/api/quote</code><br>
+          <em>Returns today's quote as JSON</em>
+        </div>
+      </div>
+      <div class="endpoint-row">
+        <span class="endpoint-method">GET</span>
+        <div class="endpoint-url">
+          <code>/api/quote?date=2025-12-25</code><br>
+          <em>Quote for a specific date</em>
+        </div>
+      </div>
+      <div class="endpoint-row">
+        <span class="endpoint-method">GET</span>
+        <div class="endpoint-url">
+          <code>/api/image?theme=neo</code><br>
+          <em>Today's quote as PNG wallpaper (neo / dark / brutal)</em>
+        </div>
+      </div>
+      <div class="endpoint-row">
+        <span class="endpoint-method">GET</span>
+        <div class="endpoint-url">
+          <code>/api/image?theme=dark&date=2025-06-01</code><br>
+          <em>Image for a specific date + theme</em>
+        </div>
+      </div>
+      <div class="endpoint-row">
+        <span class="endpoint-method">GET</span>
+        <div class="endpoint-url">
+          <code>/api/image?n=42</code><br>
+          <em>Image for quote number 42</em>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Footer ──────────────────────────────────────────── -->
+  <footer>
+    <span class="footer-text">365 quotes. One per day. No database needed.</span>
+    <div class="footer-links">
+      <a href="https://github.com/SilentComet/daily-brutal-quotes" class="footer-link" target="_blank">GitHub</a>
+      <a href="/api/quote" class="footer-link" target="_blank">JSON API</a>
+    </div>
+  </footer>
+
+</div><!-- /.wrapper -->
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ─── JavaScript ───────────────────────────────────────────────────────── -->
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let currentDate = todayUTC();  // "YYYY-MM-DD"
+  let currentMode = 'neo';       // 'neo' | 'brutal'
+
+  // ── Utilities ──────────────────────────────────────────────────────────────
+  function todayUTC() {
+    const n = new Date();
+    return `${n.getUTCFullYear()}-${String(n.getUTCMonth()+1).padStart(2,'0')}-${String(n.getUTCDate()).padStart(2,'0')}`;
+  }
+
+  function shiftDateStr(dateStr, days) {
+    const d = new Date(dateStr + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().split('T')[0];
+  }
+
+  function formatDateHuman(dateStr) {
+    return new Date(dateStr + 'T00:00:00Z').toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
+    });
+  }
+
+  // ── Quote fetching ─────────────────────────────────────────────────────────
+  async function loadQuote(dateStr) {
+    const card = document.getElementById('quote-card');
+    card.style.opacity = '0.5';
+
+    try {
+      const url = `/api/quote?date=${dateStr}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      if (!data.success) throw new Error(data.error || 'Unknown error');
+
+      // Update DOM
+      document.getElementById('quote-text').textContent      = data.text;
+      document.getElementById('quote-num-tag').textContent   = `No. ${String(data.number).padStart(3,'0')}`;
+      document.getElementById('quote-num-inline').textContent= data.number;
+      document.getElementById('quote-total').textContent     = data.total;
+      document.getElementById('quote-bg-num').textContent    = data.number;
+      document.getElementById('date-display').textContent    = formatDateHuman(dateStr);
+      document.getElementById('date-picker').value           = dateStr;
+
+      const isToday = dateStr === todayUTC();
+      document.getElementById('btn-today').disabled = isToday;
+
+      // Update download links
+      ['neo','dark','brutal'].forEach(theme => {
+        const paramDate = isToday ? '' : `&date=${dateStr}`;
+        ['dl-'+theme, 'dl-'+theme+'-2'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.href = `/api/image?theme=${theme}${paramDate}`;
+        });
+      });
+
+    } catch(err) {
+      document.getElementById('quote-text').textContent = '⚠ Failed to load quote. Is the server running?';
+      console.error('Quote fetch error:', err);
+    } finally {
+      card.style.opacity = '1';
+    }
+  }
+
+  // ── Navigation ─────────────────────────────────────────────────────────────
+  function shiftDay(delta) {
+    currentDate = shiftDateStr(currentDate, delta);
+    loadQuote(currentDate);
+  }
+
+  function goToday() {
+    currentDate = todayUTC();
+    loadQuote(currentDate);
+  }
+
+  function goToDate(val) {
+    if (val) {
+      currentDate = val;
+      loadQuote(currentDate);
+    }
+  }
+
+  // ── Mode toggle ─────────────────────────────────────────────────────────────
+  function setMode(mode) {
+    currentMode = mode;
+    document.body.className = mode;
+    document.getElementById('btn-neo').classList.toggle('active',    mode === 'neo');
+    document.getElementById('btn-brutal').classList.toggle('active', mode === 'brutal');
+    localStorage.setItem('dbq-mode', mode);
+  }
+
+  // ── Copy quote ─────────────────────────────────────────────────────────────
+  function copyQuote() {
+    const text = document.getElementById('quote-text').textContent;
+    if (!text || text.includes('Loading') || text.includes('Failed')) return;
+
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Quote copied!');
+    }).catch(() => {
+      // Fallback for older browsers
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Quote copied!');
+    });
+  }
+
+  // ── Toast ──────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    // Restore mode preference
+    const saved = localStorage.getItem('dbq-mode');
+    if (saved === 'brutal' || saved === 'neo') setMode(saved);
+
+    // Load today's quote
+    loadQuote(currentDate);
+
+    // Set date picker max to today
+    document.getElementById('date-picker').max = todayUTC();
+    document.getElementById('date-picker').value = currentDate;
+
+    // Update shortcut URL dynamically
+    const shortcutEl = document.getElementById('shortcut-url');
+    if (shortcutEl) {
+      shortcutEl.textContent = `${window.location.origin}/api/image?theme=neo`;
+    }
+  });
+</script>
+</body>
+</html>
