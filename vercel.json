@@ -1,25 +1,12 @@
 {
   "version": 2,
-  "buildCommand": "npm install",
+  "framework": null,
+  "buildCommand": "",
   "outputDirectory": "public",
-  "functions": {
-    "api/*.js": {
-      "runtime": "@vercel/node@3"
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/quote",
-      "dest": "/api/quote.js"
-    },
-    {
-      "src": "/api/image",
-      "dest": "/api/image.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/$1"
-    }
+  "installCommand": "npm install",
+  "rewrites": [
+    { "source": "/api/quote", "destination": "/api/quote.js" },
+    { "source": "/api/image", "destination": "/api/image.js" }
   ],
   "headers": [
     {
