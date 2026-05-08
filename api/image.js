@@ -12,18 +12,17 @@
  *   ?n=42             Quote by number (1-365)
  */
 
-const path = require("path");
 const { createCanvas, GlobalFonts } = require("@napi-rs/canvas");
 const { getQuoteOfTheDay, getQuoteByNumber } = require("../lib/quotes");
+const FONTS = require("../lib/fonts");
 
-// Register bundled fonts so they render correctly on Vercel serverless
-// (no system fonts are available in that environment)
-const FONTS_DIR = path.join(__dirname, "..", "assets", "fonts");
+// Register fonts from in-memory Base64 buffers — avoids Vercel serverless
+// path-resolution issues where __dirname != project root for binary assets.
 try {
-  GlobalFonts.registerFromPath(path.join(FONTS_DIR, "PlayfairDisplay-Variable.ttf"), "PlayfairDisplay");
-  GlobalFonts.registerFromPath(path.join(FONTS_DIR, "PlayfairDisplay-Italic.ttf"),   "PlayfairDisplayItalic");
-  GlobalFonts.registerFromPath(path.join(FONTS_DIR, "IBMPlexMono-Bold.ttf"),          "IBMPlexMono");
-  GlobalFonts.registerFromPath(path.join(FONTS_DIR, "IBMPlexMono-Regular.ttf"),       "IBMPlexMonoRegular");
+  GlobalFonts.register(FONTS.PlayfairDisplay,       "PlayfairDisplay");
+  GlobalFonts.register(FONTS.PlayfairDisplayItalic, "PlayfairDisplayItalic");
+  GlobalFonts.register(FONTS.IBMPlexMonoBold,       "IBMPlexMono");
+  GlobalFonts.register(FONTS.IBMPlexMonoRegular,    "IBMPlexMonoRegular");
 } catch (e) {
   console.error("Font registration error:", e.message);
 }
