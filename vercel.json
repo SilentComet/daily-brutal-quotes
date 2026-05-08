@@ -5,8 +5,8 @@
   "outputDirectory": "public",
   "installCommand": "npm install",
   "functions": {
-    "api/image.js": {
-      "includeFiles": "assets/fonts/**"
+    "api/wallpaper.js": {
+      "includeFiles": "public/fonts/**"
     }
   },
   "rewrites": [
