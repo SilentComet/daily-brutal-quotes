@@ -1,8 +1,11 @@
 /**
  * /api/image — Returns today's quote as a PNG wallpaper image.
  *
- * Uses @napi-rs/canvas — a fast, Rust-based canvas with no native build required.
- * Dimensions: 1170×2532 (iPhone 14 standard)
+ * Approach: Build an SVG string, then convert to PNG via `sharp`.
+ * This avoids @napi-rs/canvas font-loading issues on Vercel serverless —
+ * sharp uses libvips which always available and renders SVG text natively.
+ *
+ * Dimensions: 1170×2532 (iPhone 14 Pro resolution)
  *
  * Query params:
  *   ?theme=neo        Neobrutalism (default) — yellow bg, black text
@@ -12,20 +15,8 @@
  *   ?n=42             Quote by number (1-365)
  */
 
-const { createCanvas, GlobalFonts } = require("@napi-rs/canvas");
+const sharp = require("sharp");
 const { getQuoteOfTheDay, getQuoteByNumber } = require("../lib/quotes");
-const FONTS = require("../lib/fonts");
-
-// Register fonts from in-memory Base64 buffers — avoids Vercel serverless
-// path-resolution issues where __dirname != project root for binary assets.
-try {
-  GlobalFonts.register(FONTS.PlayfairDisplay,       "PlayfairDisplay");
-  GlobalFonts.register(FONTS.PlayfairDisplayItalic, "PlayfairDisplayItalic");
-  GlobalFonts.register(FONTS.IBMPlexMonoBold,       "IBMPlexMono");
-  GlobalFonts.register(FONTS.IBMPlexMonoRegular,    "IBMPlexMonoRegular");
-} catch (e) {
-  console.error("Font registration error:", e.message);
-}
 
 const W = 1170;
 const H = 2532;
@@ -33,31 +24,38 @@ const H = 2532;
 const THEMES = {
   neo: {
     bg: "#FFED47", text: "#1A1A1A", accent: "#1A1A1A",
-    secondary: "#FF4B4B", border: "#1A1A1A",
-    numberColor: "rgba(0,0,0,0.07)", tagBg: "#1A1A1A", tagText: "#FFED47",
-    quoteMark: "rgba(0,0,0,0.10)", mutedText: "rgba(0,0,0,0.40)", lineColor: "#FF4B4B",
+    border: "#1A1A1A", tagBg: "#1A1A1A", tagText: "#FFED47",
+    lineColor: "#FF4B4B", mutedText: "rgba(0,0,0,0.45)",
+    numberColor: "rgba(0,0,0,0.07)", quoteMark: "rgba(0,0,0,0.10)",
+    quoteFont: "Georgia, 'Times New Roman', serif",
+    monoFont:  "'Courier New', Courier, monospace",
   },
   dark: {
     bg: "#0D0D0D", text: "#F0F0F0", accent: "#FFED47",
-    secondary: "#FF4B4B", border: "#2A2A2A",
-    numberColor: "rgba(255,237,71,0.05)", tagBg: "#FFED47", tagText: "#0D0D0D",
-    quoteMark: "rgba(255,237,71,0.07)", mutedText: "rgba(255,255,255,0.38)", lineColor: "#FFED47",
+    border: "#2A2A2A", tagBg: "#FFED47", tagText: "#0D0D0D",
+    lineColor: "#FFED47", mutedText: "rgba(255,255,255,0.40)",
+    numberColor: "rgba(255,237,71,0.05)", quoteMark: "rgba(255,237,71,0.07)",
+    quoteFont: "Georgia, 'Times New Roman', serif",
+    monoFont:  "'Courier New', Courier, monospace",
   },
   brutal: {
     bg: "#FFFFFF", text: "#000000", accent: "#000000",
-    secondary: "#000000", border: "#000000",
-    numberColor: "rgba(0,0,0,0.04)", tagBg: "#000000", tagText: "#FFFFFF",
-    quoteMark: "rgba(0,0,0,0.05)", mutedText: "rgba(0,0,0,0.38)", lineColor: "#000000",
+    border: "#000000", tagBg: "#000000", tagText: "#FFFFFF",
+    lineColor: "#000000", mutedText: "rgba(0,0,0,0.45)",
+    numberColor: "rgba(0,0,0,0.04)", quoteMark: "rgba(0,0,0,0.05)",
+    quoteFont: "'Courier New', Courier, monospace",
+    monoFont:  "'Courier New', Courier, monospace",
   },
 };
 
-function wrapText(ctx, text, maxWidth) {
+/** Wrap text into lines that fit within maxChars characters (SVG heuristic) */
+function wrapText(text, maxChars) {
   const words = text.split(" ");
   const lines = [];
   let line = "";
   for (const word of words) {
     const candidate = line ? `${line} ${word}` : word;
-    if (ctx.measureText(candidate).width > maxWidth && line) {
+    if (candidate.length > maxChars && line) {
       lines.push(line);
       line = word;
     } else {
@@ -68,143 +66,188 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-function fitText(ctx, text, maxWidth, startSize, minSize, fontDecl) {
-  for (let size = startSize; size >= minSize; size -= 2) {
-    ctx.font = fontDecl(size);
-    const lines = wrapText(ctx, text, maxWidth);
-    if (lines.length <= 9) return { size, lines };
-  }
-  ctx.font = fontDecl(minSize);
-  return { size: minSize, lines: wrapText(ctx, text, maxWidth) };
+/** Escape XML special characters for safe SVG embedding */
+function esc(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
-function neoRect(ctx, x, y, w, h, fillColor, borderColor, borderWidth, shadowDist) {
-  if (shadowDist > 0) {
-    ctx.fillStyle = borderColor;
-    ctx.fillRect(x + shadowDist, y + shadowDist, w, h);
-  }
-  ctx.fillStyle = fillColor;
-  ctx.fillRect(x, y, w, h);
-  if (borderWidth > 0) {
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = borderWidth;
-    ctx.strokeRect(x, y, w, h);
-  }
-}
-
-function renderImage(quote, theme) {
-  const canvas = createCanvas(W, H);
-  const ctx = canvas.getContext("2d");
+function buildSVG(quote, theme) {
   const t = THEMES[theme] || THEMES.neo;
   const PAD = 96;
-  const CONTENT_W = W - PAD * 2;
+  const isBrutal = theme === "brutal";
+  const isDark   = theme === "dark";
 
-  // 1. Background
-  ctx.fillStyle = t.bg;
-  ctx.fillRect(0, 0, W, H);
+  // ── Quote text layout ──────────────────────────────────────────────────────
+  // Heuristic: target ~22 chars/line at 88px, scale down for long quotes
+  const MAX_CHARS_AT_MAX = 22;
+  const lines = wrapText(quote.text, MAX_CHARS_AT_MAX);
 
-  // 2. Dark theme dot grid
-  if (theme === "dark") {
-    ctx.fillStyle = "rgba(255,255,255,0.04)";
-    for (let x = 60; x < W; x += 70) {
-      for (let y = 60; y < H; y += 70) {
-        ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill();
-      }
-    }
-  }
+  let fontSize = 88;
+  if (lines.length > 6)  fontSize = 72;
+  if (lines.length > 8)  fontSize = 60;
+  if (lines.length > 10) fontSize = 50;
 
-  // 3. Border frame
-  if (theme === "neo" || theme === "brutal") {
-    const BW = 24, BM = 48;
-    ctx.strokeStyle = t.border;
-    ctx.lineWidth = BW;
-    ctx.strokeRect(BM + BW / 2, BM + BW / 2, W - BM * 2 - BW, H - BM * 2 - BW);
-    const cs = 24, cm = BM - cs / 2;
-    ctx.fillStyle = t.border;
-    [[cm,cm],[W-cm-cs,cm],[cm,H-cm-cs],[W-cm-cs,H-cm-cs]].forEach(([x,y]) => ctx.fillRect(x,y,cs,cs));
-  }
+  // Re-wrap at the chosen font size (larger font → fewer chars per line)
+  const charsPerLine = Math.round(MAX_CHARS_AT_MAX * (88 / fontSize));
+  const finalLines   = wrapText(quote.text, charsPerLine);
+  const lineHeight   = Math.round(fontSize * 1.35);
+  const quoteStartY  = Math.round(H * 0.27);
+  const totalTextH   = finalLines.length * lineHeight;
+  const afterY       = quoteStartY + totalTextH + 60;
+  const badgeY       = afterY + 54;
 
-  // 4. Background number watermark
-  ctx.font = `bold 620px IBMPlexMono, monospace`;
-  ctx.fillStyle = t.numberColor;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText(String(quote.number), W / 2, H / 2 + 320);
-
-  // 5. Top header
-  const HEADER_Y = 168;
-  ctx.font = `bold 34px IBMPlexMono, monospace`;
-  ctx.fillStyle = t.accent;
-  ctx.textAlign = "center";
-  ctx.fillText("DAILY  BRUTAL  QUOTES", W / 2, HEADER_Y);
-  ctx.strokeStyle = t.accent;
-  ctx.lineWidth = theme === "brutal" ? 6 : 4;
-  ctx.beginPath(); ctx.moveTo(PAD, HEADER_Y + 24); ctx.lineTo(W - PAD, HEADER_Y + 24); ctx.stroke();
-
-  // 6. Opening quote mark
-  ctx.font = `bold 200px PlayfairDisplay, serif`;
-  ctx.fillStyle = t.quoteMark;
-  ctx.textAlign = "left";
-  ctx.fillText("\u201C", PAD - 12, 540);
-
-  // 7. Quote text
-  const QUOTE_PAD_X = PAD + 8;
-  const QUOTE_W = CONTENT_W - 16;
-  const QUOTE_FONT = theme === "brutal"
-    ? (sz) => `bold ${sz}px IBMPlexMono, monospace`
-    : (sz) => `bold italic ${sz}px PlayfairDisplayItalic, PlayfairDisplay, serif`;
-
-  const { size: fontSize, lines } = fitText(ctx, quote.text, QUOTE_W, 88, 44, QUOTE_FONT);
-  const lineHeight = fontSize * 1.3;
-  const totalTextH = lines.length * lineHeight;
-  const QUOTE_START_Y = Math.round(H * 0.27);
-
-  ctx.font = QUOTE_FONT(fontSize);
-  ctx.fillStyle = t.text;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  lines.forEach((line, i) => ctx.fillText(line, QUOTE_PAD_X, QUOTE_START_Y + i * lineHeight));
-
-  // 8. Accent line
-  const AFTER_Y = QUOTE_START_Y + totalTextH + 60;
-  ctx.strokeStyle = t.lineColor;
-  ctx.lineWidth = 7;
-  ctx.lineCap = "square";
-  ctx.beginPath(); ctx.moveTo(QUOTE_PAD_X, AFTER_Y); ctx.lineTo(QUOTE_PAD_X + 140, AFTER_Y); ctx.stroke();
-
-  // 9. Number badge
-  const BADGE_Y = AFTER_Y + 54;
-  const BADGE_TEXT = `No. ${String(quote.number).padStart(3, "0")}`;
-  ctx.font = "bold 30px IBMPlexMono, monospace";
-  const bTextW = ctx.measureText(BADGE_TEXT).width;
-  const bPadX = 26, bPadY = 16;
-  const bW = bTextW + bPadX * 2, bH = 30 + bPadY * 2;
-  neoRect(ctx, QUOTE_PAD_X, BADGE_Y, bW, bH, t.tagBg, t.border,
-    theme === "brutal" ? 4 : 0,
-    theme === "neo" ? 7 : 0
-  );
-  ctx.fillStyle = t.tagText;
-  ctx.font = "bold 30px IBMPlexMono, monospace";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText(BADGE_TEXT, QUOTE_PAD_X + bPadX, BADGE_Y + bPadY + 24);
-
-  // 10. Date
+  // Date string
   const dateStr = new Date(quote.date + "T00:00:00Z").toLocaleDateString("en-US", {
     year: "numeric", month: "long", day: "numeric", timeZone: "UTC",
   });
-  ctx.font = "26px IBMPlexMonoRegular, IBMPlexMono, monospace";
-  ctx.fillStyle = t.mutedText;
-  ctx.textAlign = "left";
-  ctx.fillText(dateStr, QUOTE_PAD_X + bW + 24, BADGE_Y + bPadY + 24);
 
-  // 11. Footer branding
-  ctx.font = "24px IBMPlexMonoRegular, IBMPlexMono, monospace";
-  ctx.fillStyle = t.mutedText;
-  ctx.textAlign = "center";
-  ctx.fillText("daily-brutal-quotes.vercel.app", W / 2, H - 110);
+  const badgeText  = `No. ${String(quote.number).padStart(3, "0")}`;
+  const badgePadX  = 26;
+  const badgePadY  = 16;
+  const badgeH     = 30 + badgePadY * 2;
+  // Estimate badge width (monospace ~18px per char at 30px font)
+  const badgeW     = badgeText.length * 18 + badgePadX * 2;
 
-  return canvas;
+  // ── SVG pieces ─────────────────────────────────────────────────────────────
+
+  // Border frame (neo & brutal)
+  const BW = 24, BM = 48;
+  const borderFrame = (theme === "neo" || theme === "brutal") ? `
+    <!-- Border frame -->
+    <rect x="${BM + BW/2}" y="${BM + BW/2}"
+          width="${W - BM*2 - BW}" height="${H - BM*2 - BW}"
+          fill="none" stroke="${t.border}" stroke-width="${BW}"/>
+    <!-- Corner squares -->
+    <rect x="${BM - BW/2}" y="${BM - BW/2}" width="${BW}" height="${BW}" fill="${t.border}"/>
+    <rect x="${W - BM - BW/2}" y="${BM - BW/2}" width="${BW}" height="${BW}" fill="${t.border}"/>
+    <rect x="${BM - BW/2}" y="${H - BM - BW/2}" width="${BW}" height="${BW}" fill="${t.border}"/>
+    <rect x="${W - BM - BW/2}" y="${H - BM - BW/2}" width="${BW}" height="${BW}" fill="${t.border}"/>
+  ` : "";
+
+  // Dark dot grid
+  let dotGrid = "";
+  if (isDark) {
+    const dots = [];
+    for (let x = 60; x < W; x += 70) {
+      for (let y = 60; y < H; y += 70) {
+        dots.push(`<circle cx="${x}" cy="${y}" r="2.5" fill="rgba(255,255,255,0.04)"/>`);
+      }
+    }
+    dotGrid = dots.join("\n");
+  }
+
+  // Badge shadow (neo only)
+  const badgeShadow = theme === "neo"
+    ? `<rect x="${PAD + 8 + 7}" y="${badgeY + 7}" width="${badgeW}" height="${badgeH}" fill="${t.border}"/>`
+    : "";
+
+  // Badge border (brutal only)
+  const badgeBorder = isBrutal
+    ? `stroke="${t.border}" stroke-width="4"`
+    : `stroke="none"`;
+
+  // Quote text lines
+  const quoteLines = finalLines.map((line, i) => {
+    const y = quoteStartY + i * lineHeight;
+    return `<text x="${PAD + 8}" y="${y}"
+      font-family="${t.quoteFont}"
+      font-size="${fontSize}"
+      font-weight="bold"
+      font-style="${isBrutal ? "normal" : "italic"}"
+      fill="${t.text}"
+      dominant-baseline="auto"
+      >${esc(line)}</text>`;
+  }).join("\n");
+
+  // ── Assemble SVG ───────────────────────────────────────────────────────────
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <defs>
+    <style>
+      text { font-synthesis: none; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="${W}" height="${H}" fill="${t.bg}"/>
+
+  ${dotGrid}
+  ${borderFrame}
+
+  <!-- Watermark number -->
+  <text x="${W/2}" y="${H/2 + 320}"
+    font-family="${t.monoFont}"
+    font-size="620"
+    font-weight="bold"
+    fill="${t.numberColor}"
+    text-anchor="middle"
+    dominant-baseline="auto"
+    >${quote.number}</text>
+
+  <!-- Header -->
+  <text x="${W/2}" y="168"
+    font-family="${t.monoFont}"
+    font-size="34"
+    font-weight="bold"
+    fill="${t.accent}"
+    text-anchor="middle"
+    dominant-baseline="auto"
+    letter-spacing="6"
+    >DAILY  BRUTAL  QUOTES</text>
+  <line x1="${PAD}" y1="192" x2="${W - PAD}" y2="192"
+    stroke="${t.accent}" stroke-width="${isBrutal ? 6 : 4}"/>
+
+  <!-- Opening quote mark -->
+  <text x="${PAD - 12}" y="540"
+    font-family="${t.quoteFont}"
+    font-size="200"
+    font-weight="bold"
+    fill="${t.quoteMark}"
+    dominant-baseline="auto"
+    >&#8220;</text>
+
+  <!-- Quote text -->
+  ${quoteLines}
+
+  <!-- Accent line -->
+  <line x1="${PAD + 8}" y1="${afterY}" x2="${PAD + 8 + 140}" y2="${afterY}"
+    stroke="${t.lineColor}" stroke-width="7" stroke-linecap="square"/>
+
+  <!-- Badge -->
+  ${badgeShadow}
+  <rect x="${PAD + 8}" y="${badgeY}" width="${badgeW}" height="${badgeH}"
+    fill="${t.tagBg}" ${badgeBorder}/>
+  <text x="${PAD + 8 + badgePadX}" y="${badgeY + badgePadY + 24}"
+    font-family="${t.monoFont}"
+    font-size="30"
+    font-weight="bold"
+    fill="${t.tagText}"
+    dominant-baseline="auto"
+    >${esc(badgeText)}</text>
+
+  <!-- Date -->
+  <text x="${PAD + 8 + badgeW + 24}" y="${badgeY + badgePadY + 24}"
+    font-family="${t.monoFont}"
+    font-size="26"
+    fill="${t.mutedText}"
+    dominant-baseline="auto"
+    >${esc(dateStr)}</text>
+
+  <!-- Footer -->
+  <text x="${W/2}" y="${H - 110}"
+    font-family="${t.monoFont}"
+    font-size="24"
+    fill="${t.mutedText}"
+    text-anchor="middle"
+    dominant-baseline="auto"
+    >daily-brutal-quotes.vercel.app</text>
+</svg>`;
+
+  return svg;
 }
 
 module.exports = async function handler(req, res) {
@@ -217,12 +260,18 @@ module.exports = async function handler(req, res) {
     if (!["neo", "dark", "brutal"].includes(theme)) {
       return res.status(400).json({ error: 'Invalid theme. Use "neo", "dark", or "brutal".' });
     }
+
     const quote = n !== undefined
       ? getQuoteByNumber(parseInt(n, 10))
       : getQuoteOfTheDay(date || null);
 
-    const canvas = renderImage(quote, theme);
-    const pngBuffer = await canvas.encode("png");
+    const svg = buildSVG(quote, theme);
+
+    // Convert SVG → PNG via sharp (libvips — available on Vercel, no font setup needed)
+    const pngBuffer = await sharp(Buffer.from(svg))
+      .png()
+      .toBuffer();
+
     res.setHeader("Content-Type", "image/png");
     res.setHeader("Content-Length", pngBuffer.length);
     res.status(200).end(pngBuffer);
