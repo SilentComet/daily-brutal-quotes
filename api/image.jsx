@@ -5,33 +5,12 @@ export const config = {
   runtime: 'edge',
 };
 
-// Helper to fetch TTF ArrayBuffer from Google Fonts
-async function getFont(family, weight, style) {
-  try {
-    const url = 'https://fonts.googleapis.com/css2?family=' + family + ':ital,wght@' + (style === 'italic' ? '1,' : '0,') + weight;
-    const cssRes = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1' }});
-    const css = await cssRes.text();
-    // Use a slightly more robust regex to find the TTF URL
-    const resource = css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/);
-    if (resource) {
-      const res = await fetch(resource[1]);
-      if (res.ok) {
-        return await res.arrayBuffer();
-      }
-    }
-    return null;
-  } catch (e) {
-    console.error('Failed to load font', family, e);
-    return null;
-  }
-}
-
 const W = 1170;
 const H = 2532;
 
 export default async function handler(req) {
   try {
-    const { searchParams } = new URL(req.url);
+    const { searchParams, origin } = new URL(req.url);
     const theme = searchParams.get('theme') || 'neo';
     const dateParam = searchParams.get('date');
     const nParam = searchParams.get('n');
@@ -68,27 +47,34 @@ export default async function handler(req) {
     if (quote.text.length > 200) fontSize = 60;
     if (quote.text.length > 250) fontSize = 50;
 
-    // Fetch fonts in parallel (only fetching the ones we need for this theme)
-    const fontPromises = [];
-    
-    // Always need these for headers/numbers
-    fontPromises.push(getFont('IBM+Plex+Mono', 700, 'normal').then(data => ({ name: 'IBMPlexMono', data, weight: 700, style: 'normal' })));
-    fontPromises.push(getFont('IBM+Plex+Mono', 400, 'normal').then(data => ({ name: 'IBMPlexMonoRegular', data, weight: 400, style: 'normal' })));
+    // Fetch fonts from our own public directory (fast and avoids IP bans)
+    const fetchFont = async (filename, name, weight, style) => {
+        try {
+            const url = new URL(`/fonts/${filename}`, origin).href;
+            const res = await fetch(url);
+            if (!res.ok) return null;
+            return { name, data: await res.arrayBuffer(), weight, style };
+        } catch (e) {
+            console.error('Failed to fetch font', filename, e);
+            return null;
+        }
+    };
 
-    if (isBrutal) {
-        // Brutal uses IBM Plex Mono for everything
-    } else {
-        // Neo and Dark use Playfair Display
-        fontPromises.push(getFont('Playfair+Display', 700, 'normal').then(data => ({ name: 'PlayfairDisplay', data, weight: 700, style: 'normal' })));
-        fontPromises.push(getFont('Playfair+Display', 700, 'italic').then(data => ({ name: 'PlayfairDisplayItalic', data, weight: 700, style: 'italic' })));
+    const fontPromises = [];
+    fontPromises.push(fetchFont('IBMPlexMono-Bold.ttf', 'IBMPlexMono', 700, 'normal'));
+    fontPromises.push(fetchFont('IBMPlexMono-Regular.ttf', 'IBMPlexMonoRegular', 400, 'normal'));
+
+    if (!isBrutal) {
+        fontPromises.push(fetchFont('PlayfairDisplay-Variable.ttf', 'PlayfairDisplay', 700, 'normal'));
+        fontPromises.push(fetchFont('PlayfairDisplay-Italic.ttf', 'PlayfairDisplayItalic', 700, 'italic'));
     }
 
-    const loadedFonts = (await Promise.all(fontPromises)).filter(f => f.data !== null);
+    const loadedFonts = (await Promise.all(fontPromises)).filter(f => f && f.data);
 
     if (searchParams.get('debug') === '1') {
       return new Response(JSON.stringify({
-        loadedFonts: loadedFonts.map(f => ({ name: f.name, size: f.data?.byteLength, weight: f.weight, style: f.style })),
-        failedFonts: (await Promise.all(fontPromises)).filter(f => f.data === null).map(f => f.name)
+        origin: origin,
+        loadedFonts: loadedFonts.map(f => ({ name: f.name, size: f.data.byteLength, weight: f.weight, style: f.style }))
       }), { headers: { 'Content-Type': 'application/json' } });
     }
 
