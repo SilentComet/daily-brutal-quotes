@@ -49,6 +49,11 @@ export default async function handler(req) {
     if (quote.text.length > 250) fontSize = 50;
 
 
+    function toArrayBuffer(buffer) {
+      if (!buffer) return null;
+      return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    }
+
     return new ImageResponse(
       (
         <div
@@ -149,7 +154,7 @@ export default async function handler(req) {
                 top: -100,
                 left: -20
             }}>
-                "
+                &quot;
             </div>
 
             {/* Quote Text */}
@@ -241,10 +246,10 @@ export default async function handler(req) {
         width: W,
         height: H,
         fonts: [
-          ...(FONTS.PlayfairDisplay ? [{ name: 'PlayfairDisplay', data: FONTS.PlayfairDisplay, style: 'normal' }] : []),
-          ...(FONTS.PlayfairDisplayItalic ? [{ name: 'PlayfairDisplayItalic', data: FONTS.PlayfairDisplayItalic, style: 'italic' }] : []),
-          ...(FONTS.IBMPlexMonoBold ? [{ name: 'IBMPlexMono', data: FONTS.IBMPlexMonoBold, weight: 700, style: 'normal' }] : []),
-          ...(FONTS.IBMPlexMonoRegular ? [{ name: 'IBMPlexMonoRegular', data: FONTS.IBMPlexMonoRegular, weight: 400, style: 'normal' }] : []),
+          ...(FONTS.PlayfairDisplay ? [{ name: 'PlayfairDisplay', data: toArrayBuffer(FONTS.PlayfairDisplay), style: 'normal' }] : []),
+          ...(FONTS.PlayfairDisplayItalic ? [{ name: 'PlayfairDisplayItalic', data: toArrayBuffer(FONTS.PlayfairDisplayItalic), style: 'italic' }] : []),
+          ...(FONTS.IBMPlexMonoBold ? [{ name: 'IBMPlexMono', data: toArrayBuffer(FONTS.IBMPlexMonoBold), weight: 700, style: 'normal' }] : []),
+          ...(FONTS.IBMPlexMonoRegular ? [{ name: 'IBMPlexMonoRegular', data: toArrayBuffer(FONTS.IBMPlexMonoRegular), weight: 400, style: 'normal' }] : []),
         ],
       }
     );
