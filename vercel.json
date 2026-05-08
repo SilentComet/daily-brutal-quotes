@@ -4,6 +4,11 @@
   "buildCommand": "",
   "outputDirectory": "public",
   "installCommand": "npm install",
+  "functions": {
+    "api/image.js": {
+      "includeFiles": "assets/fonts/**"
+    }
+  },
   "rewrites": [
     { "source": "/api/quote", "destination": "/api/quote.js" },
     { "source": "/api/image", "destination": "/api/image.js" }
@@ -19,3 +24,4 @@
     }
   ]
 }
+
