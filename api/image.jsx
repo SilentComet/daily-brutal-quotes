@@ -1,12 +1,33 @@
 import { ImageResponse } from '@vercel/og';
 import { getQuoteOfTheDay, getQuoteByNumber } from '../lib/quotes';
-import FONTS from '../lib/fonts';
+
+export const config = {
+  runtime: 'edge',
+};
+
+// Helper to fetch TTF ArrayBuffer from Google Fonts
+async function getFont(family, weight, style) {
+  try {
+    const url = 'https://fonts.googleapis.com/css2?family=' + family + ':ital,wght@' + (style === 'italic' ? '1,' : '0,') + weight;
+    const cssRes = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1' }});
+    const css = await cssRes.text();
+    // Use a slightly more robust regex to find the TTF URL
+    const resource = css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/);
+    if (resource) {
+      const res = await fetch(resource[1]);
+      if (res.ok) {
+        return await res.arrayBuffer();
+      }
+    }
+    return null;
+  } catch (e) {
+    console.error('Failed to load font', family, e);
+    return null;
+  }
+}
 
 const W = 1170;
 const H = 2532;
-
-// Removed edge config to run on standard Node.js serverless functions
-// where file limits might be more generous, but using embedded fonts anyway.
 
 export default async function handler(req) {
   try {
@@ -42,17 +63,27 @@ export default async function handler(req) {
 
     const badgeText = `No. ${String(quote.number).padStart(3, "0")}`;
 
-    // Adjust font sizes based on length
     let fontSize = 88;
     if (quote.text.length > 150) fontSize = 72;
     if (quote.text.length > 200) fontSize = 60;
     if (quote.text.length > 250) fontSize = 50;
 
+    // Fetch fonts in parallel (only fetching the ones we need for this theme)
+    const fontPromises = [];
+    
+    // Always need these for headers/numbers
+    fontPromises.push(getFont('IBM+Plex+Mono', 700, 'normal').then(data => ({ name: 'IBMPlexMono', data, weight: 700, style: 'normal' })));
+    fontPromises.push(getFont('IBM+Plex+Mono', 400, 'normal').then(data => ({ name: 'IBMPlexMonoRegular', data, weight: 400, style: 'normal' })));
 
-    function toArrayBuffer(buffer) {
-      if (!buffer) return null;
-      return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    if (isBrutal) {
+        // Brutal uses IBM Plex Mono for everything
+    } else {
+        // Neo and Dark use Playfair Display
+        fontPromises.push(getFont('Playfair+Display', 700, 'normal').then(data => ({ name: 'PlayfairDisplay', data, weight: 700, style: 'normal' })));
+        fontPromises.push(getFont('Playfair+Display', 700, 'italic').then(data => ({ name: 'PlayfairDisplayItalic', data, weight: 700, style: 'italic' })));
     }
+
+    const loadedFonts = (await Promise.all(fontPromises)).filter(f => f.data !== null);
 
     return new ImageResponse(
       (
@@ -133,7 +164,6 @@ export default async function handler(req) {
             }}></div>
           </div>
 
-
           {/* Main Content Area */}
           <div style={{
               position: 'absolute',
@@ -146,7 +176,7 @@ export default async function handler(req) {
           }}>
               {/* Quote Mark */}
                <div style={{
-                fontFamily: 'PlayfairDisplay',
+                fontFamily: isBrutal ? 'IBMPlexMono' : 'PlayfairDisplay',
                 fontSize: 200,
                 fontWeight: 700,
                 color: isDark ? 'rgba(255,237,71,0.07)' : (isBrutal ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.10)'),
@@ -162,11 +192,12 @@ export default async function handler(req) {
                 fontFamily: isBrutal ? 'IBMPlexMono' : 'PlayfairDisplayItalic',
                 fontSize: fontSize,
                 fontWeight: 700,
+                fontStyle: isBrutal ? 'normal' : 'italic',
                 color: textCol,
                 lineHeight: 1.35,
                 marginBottom: 60,
                 display: 'flex',
-                flexWrap: 'wrap' // Satori handles text wrapping with flex
+                flexWrap: 'wrap'
             }}>
                 {quote.text}
             </div>
@@ -245,12 +276,7 @@ export default async function handler(req) {
       {
         width: W,
         height: H,
-        fonts: [
-          ...(FONTS.PlayfairDisplay ? [{ name: 'PlayfairDisplay', data: toArrayBuffer(FONTS.PlayfairDisplay), style: 'normal' }] : []),
-          ...(FONTS.PlayfairDisplayItalic ? [{ name: 'PlayfairDisplayItalic', data: toArrayBuffer(FONTS.PlayfairDisplayItalic), style: 'italic' }] : []),
-          ...(FONTS.IBMPlexMonoBold ? [{ name: 'IBMPlexMono', data: toArrayBuffer(FONTS.IBMPlexMonoBold), weight: 700, style: 'normal' }] : []),
-          ...(FONTS.IBMPlexMonoRegular ? [{ name: 'IBMPlexMonoRegular', data: toArrayBuffer(FONTS.IBMPlexMonoRegular), weight: 400, style: 'normal' }] : []),
-        ],
+        fonts: loadedFonts,
       }
     );
   } catch (e) {
