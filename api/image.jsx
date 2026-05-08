@@ -1,24 +1,12 @@
 import { ImageResponse } from '@vercel/og';
 import { getQuoteOfTheDay, getQuoteByNumber } from '../lib/quotes';
-import * as fs from 'fs';
-import * as path from 'path';
-
-// Load fonts
-const fontsDir = path.join(process.cwd(), 'assets', 'fonts');
-
-// Load fonts safely, falling back to null if missing (should be bundled via vercel.json)
-const playfairDisplay = (() => { try { return fs.readFileSync(path.join(fontsDir, 'PlayfairDisplay-Variable.ttf')) } catch(e) { return null; }})();
-const playfairDisplayItalic = (() => { try { return fs.readFileSync(path.join(fontsDir, 'PlayfairDisplay-Italic.ttf')) } catch(e) { return null; }})();
-const ibmPlexMonoBold = (() => { try { return fs.readFileSync(path.join(fontsDir, 'IBMPlexMono-Bold.ttf')) } catch(e) { return null; }})();
-const ibmPlexMonoRegular = (() => { try { return fs.readFileSync(path.join(fontsDir, 'IBMPlexMono-Regular.ttf')) } catch(e) { return null; }})();
-
+import FONTS from '../lib/fonts';
 
 const W = 1170;
 const H = 2532;
 
-export const config = {
-  runtime: 'edge',
-};
+// Removed edge config to run on standard Node.js serverless functions
+// where file limits might be more generous, but using embedded fonts anyway.
 
 export default async function handler(req) {
   try {
@@ -253,10 +241,10 @@ export default async function handler(req) {
         width: W,
         height: H,
         fonts: [
-          ...(playfairDisplay ? [{ name: 'PlayfairDisplay', data: playfairDisplay, style: 'normal' }] : []),
-          ...(playfairDisplayItalic ? [{ name: 'PlayfairDisplayItalic', data: playfairDisplayItalic, style: 'italic' }] : []),
-          ...(ibmPlexMonoBold ? [{ name: 'IBMPlexMono', data: ibmPlexMonoBold, weight: 700, style: 'normal' }] : []),
-          ...(ibmPlexMonoRegular ? [{ name: 'IBMPlexMonoRegular', data: ibmPlexMonoRegular, weight: 400, style: 'normal' }] : []),
+          ...(FONTS.PlayfairDisplay ? [{ name: 'PlayfairDisplay', data: FONTS.PlayfairDisplay, style: 'normal' }] : []),
+          ...(FONTS.PlayfairDisplayItalic ? [{ name: 'PlayfairDisplayItalic', data: FONTS.PlayfairDisplayItalic, style: 'italic' }] : []),
+          ...(FONTS.IBMPlexMonoBold ? [{ name: 'IBMPlexMono', data: FONTS.IBMPlexMonoBold, weight: 700, style: 'normal' }] : []),
+          ...(FONTS.IBMPlexMonoRegular ? [{ name: 'IBMPlexMonoRegular', data: FONTS.IBMPlexMonoRegular, weight: 400, style: 'normal' }] : []),
         ],
       }
     );
