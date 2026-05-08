@@ -1,5 +1,6 @@
 import { ImageResponse } from '@vercel/og';
 import { getQuoteOfTheDay, getQuoteByNumber } from '../lib/quotes';
+import { IBMPlexMonoBold, IBMPlexMonoRegular, PlayfairDisplay, PlayfairDisplayItalic } from '../lib/fonts-b64';
 
 export const config = {
   runtime: 'edge',
@@ -8,9 +9,18 @@ export const config = {
 const W = 1170;
 const H = 2532;
 
+function base64ToArrayBuffer(base64) {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 export default async function handler(req) {
   try {
-    const { searchParams, origin } = new URL(req.url);
+    const { searchParams } = new URL(req.url);
     const theme = searchParams.get('theme') || 'neo';
     const dateParam = searchParams.get('date');
     const nParam = searchParams.get('n');
@@ -47,33 +57,19 @@ export default async function handler(req) {
     if (quote.text.length > 200) fontSize = 60;
     if (quote.text.length > 250) fontSize = 50;
 
-    // Fetch fonts from our own public directory (fast and avoids IP bans)
-    const fetchFont = async (filename, name, weight, style) => {
-        try {
-            const url = new URL(`/fonts/${filename}`, origin).href;
-            const res = await fetch(url);
-            if (!res.ok) return null;
-            return { name, data: await res.arrayBuffer(), weight, style };
-        } catch (e) {
-            console.error('Failed to fetch font', filename, e);
-            return null;
-        }
-    };
-
-    const fontPromises = [];
-    fontPromises.push(fetchFont('IBMPlexMono-Bold.ttf', 'IBMPlexMono', 700, 'normal'));
-    fontPromises.push(fetchFont('IBMPlexMono-Regular.ttf', 'IBMPlexMonoRegular', 400, 'normal'));
+    // Decode fonts
+    const loadedFonts = [
+        { name: 'IBMPlexMono', data: base64ToArrayBuffer(IBMPlexMonoBold), weight: 700, style: 'normal' },
+        { name: 'IBMPlexMonoRegular', data: base64ToArrayBuffer(IBMPlexMonoRegular), weight: 400, style: 'normal' }
+    ];
 
     if (!isBrutal) {
-        fontPromises.push(fetchFont('PlayfairDisplay-Variable.ttf', 'PlayfairDisplay', 700, 'normal'));
-        fontPromises.push(fetchFont('PlayfairDisplay-Italic.ttf', 'PlayfairDisplayItalic', 700, 'italic'));
+        loadedFonts.push({ name: 'PlayfairDisplay', data: base64ToArrayBuffer(PlayfairDisplay), weight: 700, style: 'normal' });
+        loadedFonts.push({ name: 'PlayfairDisplayItalic', data: base64ToArrayBuffer(PlayfairDisplayItalic), weight: 700, style: 'italic' });
     }
-
-    const loadedFonts = (await Promise.all(fontPromises)).filter(f => f && f.data);
 
     if (searchParams.get('debug') === '1') {
       return new Response(JSON.stringify({
-        origin: origin,
         loadedFonts: loadedFonts.map(f => ({ name: f.name, size: f.data.byteLength, weight: f.weight, style: f.style }))
       }), { headers: { 'Content-Type': 'application/json' } });
     }
@@ -97,16 +93,15 @@ export default async function handler(req) {
                     position: 'absolute',
                     top: 48, left: 48, right: 48, bottom: 48,
                     border: `24px solid ${border}`,
-                    pointerEvents: 'none'
                 }}></div>
             )}
              {(isNeo || isBrutal) && (
-                 <>
+                 <div style={{ display: 'flex' }}>
                 <div style={{ position: 'absolute', top: 36, left: 36, width: 24, height: 24, backgroundColor: border }}></div>
                 <div style={{ position: 'absolute', top: 36, right: 36, width: 24, height: 24, backgroundColor: border }}></div>
                 <div style={{ position: 'absolute', bottom: 36, left: 36, width: 24, height: 24, backgroundColor: border }}></div>
                 <div style={{ position: 'absolute', bottom: 36, right: 36, width: 24, height: 24, backgroundColor: border }}></div>
-                </>
+                </div>
             )}
 
           {/* Watermark Number */}
@@ -142,13 +137,12 @@ export default async function handler(req) {
               zIndex: 10,
             }}
           >
-            <span style={{
+            <div style={{
                 fontFamily: 'IBMPlexMono',
                 fontSize: 34,
                 fontWeight: 700,
                 color: accent,
-                letterSpacing: 6
-            }}>DAILY  BRUTAL  QUOTES</span>
+            }}>DAILY BRUTAL QUOTES</div>
             <div style={{
                 width: W - 192,
                 height: isBrutal ? 6 : 4,
