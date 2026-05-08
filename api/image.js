@@ -12,8 +12,21 @@
  *   ?n=42             Quote by number (1-365)
  */
 
-const { createCanvas } = require("@napi-rs/canvas");
+const path = require("path");
+const { createCanvas, GlobalFonts } = require("@napi-rs/canvas");
 const { getQuoteOfTheDay, getQuoteByNumber } = require("../lib/quotes");
+
+// Register bundled fonts so they render correctly on Vercel serverless
+// (no system fonts are available in that environment)
+const FONTS_DIR = path.join(__dirname, "..", "assets", "fonts");
+try {
+  GlobalFonts.registerFromPath(path.join(FONTS_DIR, "PlayfairDisplay-Variable.ttf"), "PlayfairDisplay");
+  GlobalFonts.registerFromPath(path.join(FONTS_DIR, "PlayfairDisplay-Italic.ttf"),   "PlayfairDisplayItalic");
+  GlobalFonts.registerFromPath(path.join(FONTS_DIR, "IBMPlexMono-Bold.ttf"),          "IBMPlexMono");
+  GlobalFonts.registerFromPath(path.join(FONTS_DIR, "IBMPlexMono-Regular.ttf"),       "IBMPlexMonoRegular");
+} catch (e) {
+  console.error("Font registration error:", e.message);
+}
 
 const W = 1170;
 const H = 2532;
@@ -113,7 +126,7 @@ function renderImage(quote, theme) {
   }
 
   // 4. Background number watermark
-  ctx.font = `bold 620px serif`;
+  ctx.font = `bold 620px IBMPlexMono, monospace`;
   ctx.fillStyle = t.numberColor;
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
@@ -121,7 +134,7 @@ function renderImage(quote, theme) {
 
   // 5. Top header
   const HEADER_Y = 168;
-  ctx.font = `bold 34px monospace`;
+  ctx.font = `bold 34px IBMPlexMono, monospace`;
   ctx.fillStyle = t.accent;
   ctx.textAlign = "center";
   ctx.fillText("DAILY  BRUTAL  QUOTES", W / 2, HEADER_Y);
@@ -130,7 +143,7 @@ function renderImage(quote, theme) {
   ctx.beginPath(); ctx.moveTo(PAD, HEADER_Y + 24); ctx.lineTo(W - PAD, HEADER_Y + 24); ctx.stroke();
 
   // 6. Opening quote mark
-  ctx.font = `bold 200px serif`;
+  ctx.font = `bold 200px PlayfairDisplay, serif`;
   ctx.fillStyle = t.quoteMark;
   ctx.textAlign = "left";
   ctx.fillText("\u201C", PAD - 12, 540);
@@ -139,8 +152,8 @@ function renderImage(quote, theme) {
   const QUOTE_PAD_X = PAD + 8;
   const QUOTE_W = CONTENT_W - 16;
   const QUOTE_FONT = theme === "brutal"
-    ? (sz) => `bold ${sz}px monospace`
-    : (sz) => `bold italic ${sz}px serif`;
+    ? (sz) => `bold ${sz}px IBMPlexMono, monospace`
+    : (sz) => `bold italic ${sz}px PlayfairDisplayItalic, PlayfairDisplay, serif`;
 
   const { size: fontSize, lines } = fitText(ctx, quote.text, QUOTE_W, 88, 44, QUOTE_FONT);
   const lineHeight = fontSize * 1.3;
@@ -163,7 +176,7 @@ function renderImage(quote, theme) {
   // 9. Number badge
   const BADGE_Y = AFTER_Y + 54;
   const BADGE_TEXT = `No. ${String(quote.number).padStart(3, "0")}`;
-  ctx.font = "bold 30px monospace";
+  ctx.font = "bold 30px IBMPlexMono, monospace";
   const bTextW = ctx.measureText(BADGE_TEXT).width;
   const bPadX = 26, bPadY = 16;
   const bW = bTextW + bPadX * 2, bH = 30 + bPadY * 2;
@@ -172,7 +185,7 @@ function renderImage(quote, theme) {
     theme === "neo" ? 7 : 0
   );
   ctx.fillStyle = t.tagText;
-  ctx.font = "bold 30px monospace";
+  ctx.font = "bold 30px IBMPlexMono, monospace";
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
   ctx.fillText(BADGE_TEXT, QUOTE_PAD_X + bPadX, BADGE_Y + bPadY + 24);
@@ -181,13 +194,13 @@ function renderImage(quote, theme) {
   const dateStr = new Date(quote.date + "T00:00:00Z").toLocaleDateString("en-US", {
     year: "numeric", month: "long", day: "numeric", timeZone: "UTC",
   });
-  ctx.font = "26px monospace";
+  ctx.font = "26px IBMPlexMonoRegular, IBMPlexMono, monospace";
   ctx.fillStyle = t.mutedText;
   ctx.textAlign = "left";
   ctx.fillText(dateStr, QUOTE_PAD_X + bW + 24, BADGE_Y + bPadY + 24);
 
   // 11. Footer branding
-  ctx.font = "24px monospace";
+  ctx.font = "24px IBMPlexMonoRegular, IBMPlexMono, monospace";
   ctx.fillStyle = t.mutedText;
   ctx.textAlign = "center";
   ctx.fillText("daily-brutal-quotes.vercel.app", W / 2, H - 110);
