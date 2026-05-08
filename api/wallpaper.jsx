@@ -1,39 +1,29 @@
 import { ImageResponse } from '@vercel/og';
 import { getQuoteOfTheDay, getQuoteByNumber } from '../lib/quotes';
-import fs from 'fs';
-import path from 'path';
+import { IBMPlexMonoBold, IBMPlexMonoRegular, PlayfairDisplay, PlayfairDisplayItalic } from '../lib/fonts-b64';
+
+export const config = {
+  runtime: 'edge',
+};
 
 const W = 1170;
 const H = 2532;
 
-// Load fonts from filesystem (Node.js runtime)
-function getFont(filename) {
-    try {
-        const filePath = path.join(process.cwd(), 'public', 'fonts', filename);
-        const fontBuffer = fs.readFileSync(filePath);
-        return fontBuffer.buffer.slice(fontBuffer.byteOffset, fontBuffer.byteOffset + fontBuffer.byteLength);
-    } catch (e) {
-        console.error('Failed to load font', filename, e);
-        return null;
-    }
+function base64ToArrayBuffer(base64) {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
 }
-
-// We only load STATIC fonts. Satori drops Variable fonts entirely.
-const ibmBold = getFont('IBMPlexMono-Bold.ttf');
-const ibmReg = getFont('IBMPlexMono-Regular.ttf');
-const playfairItalic = getFont('PlayfairDisplay-Italic.ttf');
 
 export default async function handler(req) {
   try {
-    const url = new URL(req.url, 'http://localhost');
-    const searchParams = url.searchParams;
+    const { searchParams } = new URL(req.url);
     const theme = searchParams.get('theme') || 'neo';
     const dateParam = searchParams.get('date');
     const nParam = searchParams.get('n');
-
-    if (!['neo', 'dark', 'brutal'].includes(theme)) {
-      return new Response(JSON.stringify({ error: 'Invalid theme' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
 
     const quote = nParam
       ? getQuoteByNumber(parseInt(nParam, 10))
@@ -63,12 +53,17 @@ export default async function handler(req) {
     if (quote.text.length > 200) fontSize = 60;
     if (quote.text.length > 250) fontSize = 50;
 
-    const fonts = [];
-    if (ibmBold) fonts.push({ name: 'IBMPlexMono', data: ibmBold, weight: 700, style: 'normal' });
-    if (ibmReg) fonts.push({ name: 'IBMPlexMonoRegular', data: ibmReg, weight: 400, style: 'normal' });
-    if (playfairItalic) fonts.push({ name: 'PlayfairDisplayItalic', data: playfairItalic, weight: 700, style: 'italic' });
-    // IMPORTANT: PlayfairDisplay normal weight maps to Italic static font or IBM bold because variable fonts break Satori
-    if (playfairItalic) fonts.push({ name: 'PlayfairDisplay', data: playfairItalic, weight: 700, style: 'normal' }); 
+    // Load fonts. NOTE: We avoid PlayfairDisplay-Variable.ttf as Satori doesn't support variable fonts.
+    const loadedFonts = [
+        { name: 'IBMPlexMono', data: base64ToArrayBuffer(IBMPlexMonoBold), weight: 700, style: 'normal' },
+        { name: 'IBMPlexMonoRegular', data: base64ToArrayBuffer(IBMPlexMonoRegular), weight: 400, style: 'normal' }
+    ];
+
+    if (!isBrutal) {
+        // Use static Italic font for both normal and italic slots to avoid variable font poison
+        loadedFonts.push({ name: 'PlayfairDisplay', data: base64ToArrayBuffer(PlayfairDisplayItalic), weight: 700, style: 'normal' });
+        loadedFonts.push({ name: 'PlayfairDisplayItalic', data: base64ToArrayBuffer(PlayfairDisplayItalic), weight: 700, style: 'italic' });
+    }
 
     return new ImageResponse(
       (
@@ -89,35 +84,37 @@ export default async function handler(req) {
                     position: 'absolute',
                     top: 48, left: 48, right: 48, bottom: 48,
                     border: `24px solid ${border}`,
+                    display: 'flex',
                 }}></div>
             )}
              {(isNeo || isBrutal) && (
                  <div style={{ display: 'flex' }}>
-                <div style={{ position: 'absolute', top: 36, left: 36, width: 24, height: 24, backgroundColor: border }}></div>
-                <div style={{ position: 'absolute', top: 36, right: 36, width: 24, height: 24, backgroundColor: border }}></div>
-                <div style={{ position: 'absolute', bottom: 36, left: 36, width: 24, height: 24, backgroundColor: border }}></div>
-                <div style={{ position: 'absolute', bottom: 36, right: 36, width: 24, height: 24, backgroundColor: border }}></div>
+                    <div style={{ position: 'absolute', top: 36, left: 36, width: 24, height: 24, backgroundColor: border }}></div>
+                    <div style={{ position: 'absolute', top: 36, right: 36, width: 24, height: 24, backgroundColor: border }}></div>
+                    <div style={{ position: 'absolute', bottom: 36, left: 36, width: 24, height: 24, backgroundColor: border }}></div>
+                    <div style={{ position: 'absolute', bottom: 36, right: 36, width: 24, height: 24, backgroundColor: border }}></div>
                 </div>
             )}
 
-          {/* Watermark Number */}
+          {/* Watermark Number - Fixed with Flex Centering (Bug 3) */}
           <div
             style={{
               position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 0,
+            }}
+          >
+            <div style={{
               fontFamily: 'IBMPlexMono',
               fontSize: 620,
               fontWeight: 700,
               color: numColor,
-              zIndex: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {quote.number}
+            }}>
+              {quote.number}
+            </div>
           </div>
 
           {/* Header */}
@@ -138,12 +135,14 @@ export default async function handler(req) {
                 fontSize: 34,
                 fontWeight: 700,
                 color: accent,
+                display: 'flex',
             }}>DAILY BRUTAL QUOTES</div>
             <div style={{
                 width: W - 192,
                 height: isBrutal ? 6 : 4,
                 backgroundColor: accent,
-                marginTop: 24
+                marginTop: 24,
+                display: 'flex',
             }}></div>
           </div>
 
@@ -157,7 +156,7 @@ export default async function handler(req) {
               flexDirection: 'column',
               zIndex: 10
           }}>
-              {/* Quote Mark */}
+              {/* Quote Mark - Fixed HTML Entity (Bug 2) */}
                <div style={{
                 fontFamily: isBrutal ? 'IBMPlexMono' : 'PlayfairDisplay',
                 fontSize: 200,
@@ -165,12 +164,13 @@ export default async function handler(req) {
                 color: isDark ? 'rgba(255,237,71,0.07)' : (isBrutal ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.10)'),
                 position: 'absolute',
                 top: -100,
-                left: -20
+                left: -20,
+                display: 'flex',
             }}>
-                &quot;
+                {'\u201C'}
             </div>
 
-            {/* Quote Text */}
+            {/* Quote Text - Removed display:flex (Bug 1) */}
             <div style={{
                 fontFamily: isBrutal ? 'IBMPlexMono' : 'PlayfairDisplayItalic',
                 fontSize: fontSize,
@@ -179,8 +179,7 @@ export default async function handler(req) {
                 color: textCol,
                 lineHeight: 1.35,
                 marginBottom: 60,
-                display: 'flex',
-                flexWrap: 'wrap'
+                // Block layout handles text wrapping natively in Satori
             }}>
                 {quote.text}
             </div>
@@ -190,7 +189,8 @@ export default async function handler(req) {
                 width: 140,
                 height: 7,
                 backgroundColor: isDark ? '#FFED47' : (isBrutal ? '#000000' : '#FF4B4B'),
-                marginBottom: 54
+                marginBottom: 54,
+                display: 'flex',
             }}></div>
 
             {/* Meta (Badge + Date) */}
@@ -202,7 +202,8 @@ export default async function handler(req) {
                             position: 'absolute',
                             top: 7, left: 7, right: -7, bottom: -7,
                             backgroundColor: border,
-                            zIndex: 1
+                            zIndex: 1,
+                            display: 'flex',
                         }}></div>
                     )}
                     <div style={{
@@ -218,7 +219,8 @@ export default async function handler(req) {
                             fontFamily: 'IBMPlexMono',
                             fontSize: 30,
                             fontWeight: 700,
-                            color: tagText
+                            color: tagText,
+                            display: 'flex',
                         }}>
                             {badgeText}
                         </span>
@@ -230,7 +232,8 @@ export default async function handler(req) {
                      fontFamily: 'IBMPlexMonoRegular',
                      fontSize: 26,
                      color: mutedText,
-                     marginLeft: 24
+                     marginLeft: 24,
+                     display: 'flex',
                 }}>
                     {dateStr}
                 </div>
@@ -259,7 +262,7 @@ export default async function handler(req) {
       {
         width: W,
         height: H,
-        fonts: fonts,
+        fonts: loadedFonts,
       }
     );
   } catch (e) {

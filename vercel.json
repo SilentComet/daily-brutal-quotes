@@ -5,7 +5,7 @@
   "outputDirectory": "public",
   "installCommand": "npm install",
   "functions": {
-    "api/wallpaper.js": {
+    "api/wallpaper.jsx": {
       "includeFiles": "public/fonts/**"
     }
   },
