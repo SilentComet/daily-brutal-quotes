@@ -1,20 +1,17 @@
 import { ImageResponse } from '@vercel/og';
 import { getQuoteOfTheDay, getQuoteByNumber } from '../lib/quotes';
-import fs from 'fs';
-import path from 'path';
+import { IBMPlexMonoBold, IBMPlexMonoRegular, PlayfairDisplay, PlayfairDisplayItalic } from '../lib/fonts-b64';
 
 const W = 1170;
 const H = 2532;
 
-// Load fonts from the filesystem since we are running in standard Node.js
-function getFont(filename) {
+// Standard Node.js Buffer to ArrayBuffer conversion
+function getFontBuffer(b64) {
     try {
-        const filePath = path.join(process.cwd(), 'public', 'fonts', filename);
-        if (!fs.existsSync(filePath)) return null;
-        const fontBuffer = fs.readFileSync(filePath);
-        return fontBuffer.buffer.slice(fontBuffer.byteOffset, fontBuffer.byteOffset + fontBuffer.byteLength);
+        const buf = Buffer.from(b64, 'base64');
+        return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
     } catch (e) {
-        console.error('Failed to load font', filename, e);
+        console.error(e);
         return null;
     }
 }
@@ -35,18 +32,10 @@ export default async function handler(req) {
 
     const bg = isDark ? '#0D0D0D' : (isBrutal ? '#FFFFFF' : '#FFED47');
     const textCol = isDark ? '#F0F0F0' : (isBrutal ? '#000000' : '#1A1A1A');
-    
-    // Load font
-    const ibmBold = getFont('IBMPlexMono-Bold.ttf');
-    const fonts = [];
-    if (ibmBold) {
-        fonts.push({
-            name: 'IBMPlexMono',
-            data: ibmBold,
-            weight: 700,
-            style: 'normal'
-        });
-    }
+
+    const fonts = [
+        { name: 'IBMPlexMono', data: getFontBuffer(IBMPlexMonoBold), weight: 700, style: 'normal' }
+    ];
 
     return new ImageResponse(
       (
@@ -63,7 +52,7 @@ export default async function handler(req) {
           }}
         >
           <div style={{ fontFamily: 'IBMPlexMono', fontSize: 100, color: textCol, display: 'flex' }}>
-            Testing Node.js Text Rendering
+            Testing Node.js Base64 Fonts
           </div>
           <div style={{ fontFamily: 'IBMPlexMono', fontSize: 60, color: textCol, marginTop: 40, display: 'flex' }}>
             {quote.text}
