@@ -85,6 +85,13 @@ export default async function handler(req) {
 
     const loadedFonts = (await Promise.all(fontPromises)).filter(f => f.data !== null);
 
+    if (searchParams.get('debug') === '1') {
+      return new Response(JSON.stringify({
+        loadedFonts: loadedFonts.map(f => ({ name: f.name, size: f.data?.byteLength, weight: f.weight, style: f.style })),
+        failedFonts: (await Promise.all(fontPromises)).filter(f => f.data === null).map(f => f.name)
+      }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
     return new ImageResponse(
       (
         <div
