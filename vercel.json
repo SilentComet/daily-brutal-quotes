@@ -5,23 +5,33 @@
   "outputDirectory": "public",
   "installCommand": "npm install",
   "functions": {
-    "api/wallpaper.jsx": {
-      "includeFiles": "public/fonts/**"
+    "api/image.js": {
+      "includeFiles": "assets/fonts/**"
     }
   },
   "rewrites": [
-    { "source": "/api/quote", "destination": "/api/quote.js" },
-    { "source": "/api/image", "destination": "/api/wallpaper.jsx" }
+    {
+      "source": "/api/quote",
+      "destination": "/api/quote.js"
+    }
   ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin",  "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
-        { "key": "Cache-Control",                "value": "no-cache, no-store, must-revalidate" }
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, OPTIONS"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
       ]
     }
   ]
 }
-

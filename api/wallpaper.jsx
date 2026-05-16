@@ -13,7 +13,7 @@ function base64ToArrayBuffer(base64) {
   const binaryString = atob(base64);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    bytes[i] = binaryString.charCodeAt(i);
   }
   return bytes.buffer;
 }
@@ -43,7 +43,7 @@ export default async function handler(req) {
     const numColor = isDark ? 'rgba(255,237,71,0.05)' : (isBrutal ? 'rgba(0,0,0,0.04)' : 'rgba(0,0,0,0.07)');
 
     const dateStr = new Date(quote.date + "T00:00:00Z").toLocaleDateString("en-US", {
-        year: "numeric", month: "long", day: "numeric", timeZone: "UTC",
+      year: "numeric", month: "long", day: "numeric", timeZone: "UTC",
     });
 
     const badgeText = `No. ${String(quote.number).padStart(3, "0")}`;
@@ -55,14 +55,14 @@ export default async function handler(req) {
 
     // Load fonts. NOTE: We avoid PlayfairDisplay-Variable.ttf as Satori doesn't support variable fonts.
     const loadedFonts = [
-        { name: 'IBMPlexMono', data: base64ToArrayBuffer(IBMPlexMonoBold), weight: 700, style: 'normal' },
-        { name: 'IBMPlexMonoRegular', data: base64ToArrayBuffer(IBMPlexMonoRegular), weight: 400, style: 'normal' }
+      { name: 'IBMPlexMono', data: base64ToArrayBuffer(IBMPlexMonoBold), weight: 700, style: 'normal' },
+      { name: 'IBMPlexMonoRegular', data: base64ToArrayBuffer(IBMPlexMonoRegular), weight: 400, style: 'normal' }
     ];
 
     if (!isBrutal) {
-        // Use static Italic font for both normal and italic slots to avoid variable font poison
-        loadedFonts.push({ name: 'PlayfairDisplay', data: base64ToArrayBuffer(PlayfairDisplayItalic), weight: 700, style: 'normal' });
-        loadedFonts.push({ name: 'PlayfairDisplayItalic', data: base64ToArrayBuffer(PlayfairDisplayItalic), weight: 700, style: 'italic' });
+      // Use static Italic font for both normal and italic slots to avoid variable font poison
+      loadedFonts.push({ name: 'PlayfairDisplay', data: base64ToArrayBuffer(PlayfairDisplayItalic), weight: 700, style: 'normal' });
+      loadedFonts.push({ name: 'PlayfairDisplayItalic', data: base64ToArrayBuffer(PlayfairDisplayItalic), weight: 700, style: 'italic' });
     }
 
     return new ImageResponse(
@@ -78,23 +78,23 @@ export default async function handler(req) {
             overflow: 'hidden',
           }}
         >
-            {/* Border Frame */}
-            {(isNeo || isBrutal) && (
-                <div style={{
-                    position: 'absolute',
-                    top: 48, left: 48, right: 48, bottom: 48,
-                    border: `24px solid ${border}`,
-                    display: 'flex',
-                }}></div>
-            )}
-             {(isNeo || isBrutal) && (
-                 <div style={{ display: 'flex' }}>
-                    <div style={{ position: 'absolute', top: 36, left: 36, width: 24, height: 24, backgroundColor: border }}></div>
-                    <div style={{ position: 'absolute', top: 36, right: 36, width: 24, height: 24, backgroundColor: border }}></div>
-                    <div style={{ position: 'absolute', bottom: 36, left: 36, width: 24, height: 24, backgroundColor: border }}></div>
-                    <div style={{ position: 'absolute', bottom: 36, right: 36, width: 24, height: 24, backgroundColor: border }}></div>
-                </div>
-            )}
+          {/* Border Frame */}
+          {(isNeo || isBrutal) && (
+            <div style={{
+              position: 'absolute',
+              top: 48, left: 48, right: 48, bottom: 48,
+              border: `24px solid ${border}`,
+              display: 'flex',
+            }}></div>
+          )}
+          {(isNeo || isBrutal) && (
+            <div style={{ display: 'flex' }}>
+              <div style={{ position: 'absolute', top: 36, left: 36, width: 24, height: 24, backgroundColor: border }}></div>
+              <div style={{ position: 'absolute', top: 36, right: 36, width: 24, height: 24, backgroundColor: border }}></div>
+              <div style={{ position: 'absolute', bottom: 36, left: 36, width: 24, height: 24, backgroundColor: border }}></div>
+              <div style={{ position: 'absolute', bottom: 36, right: 36, width: 24, height: 24, backgroundColor: border }}></div>
+            </div>
+          )}
 
           {/* Watermark Number - Fixed with Flex Centering (Bug 3) */}
           <div
@@ -131,130 +131,130 @@ export default async function handler(req) {
             }}
           >
             <div style={{
-                fontFamily: 'IBMPlexMono',
-                fontSize: 34,
-                fontWeight: 700,
-                color: accent,
-                display: 'flex',
+              fontFamily: 'IBMPlexMono',
+              fontSize: 34,
+              fontWeight: 700,
+              color: accent,
+              display: 'flex',
             }}>DAILY BRUTAL QUOTES</div>
             <div style={{
-                width: W - 192,
-                height: isBrutal ? 6 : 4,
-                backgroundColor: accent,
-                marginTop: 24,
-                display: 'flex',
+              width: W - 192,
+              height: isBrutal ? 6 : 4,
+              backgroundColor: accent,
+              marginTop: 24,
+              display: 'flex',
             }}></div>
           </div>
 
           {/* Main Content Area */}
           <div style={{
-              position: 'absolute',
-              top: H * 0.27,
-              left: 96 + 8,
-              right: 96 + 8,
-              display: 'flex',
-              flexDirection: 'column',
-              zIndex: 10
+            position: 'absolute',
+            top: H * 0.27,
+            left: 96 + 8,
+            right: 96 + 8,
+            display: 'flex',
+            flexDirection: 'column',
+            zIndex: 10
           }}>
-              {/* Quote Mark - Fixed HTML Entity (Bug 2) */}
-               <div style={{
-                fontFamily: isBrutal ? 'IBMPlexMono' : 'PlayfairDisplay',
-                fontSize: 200,
-                fontWeight: 700,
-                color: isDark ? 'rgba(255,237,71,0.07)' : (isBrutal ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.10)'),
-                position: 'absolute',
-                top: -100,
-                left: -20,
-                display: 'flex',
+            {/* Quote Mark - Fixed HTML Entity (Bug 2) */}
+            <div style={{
+              fontFamily: isBrutal ? 'IBMPlexMono' : 'PlayfairDisplay',
+              fontSize: 200,
+              fontWeight: 700,
+              color: isDark ? 'rgba(255,237,71,0.07)' : (isBrutal ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.10)'),
+              position: 'absolute',
+              top: -100,
+              left: -20,
+              display: 'flex',
             }}>
-                {'\u201C'}
+              {'\u201C'}
             </div>
 
             {/* Quote Text - Removed display:flex (Bug 1) */}
             <div style={{
-                fontFamily: isBrutal ? 'IBMPlexMono' : 'PlayfairDisplayItalic',
-                fontSize: fontSize,
-                fontWeight: 700,
-                fontStyle: isBrutal ? 'normal' : 'italic',
-                color: textCol,
-                lineHeight: 1.35,
-                marginBottom: 60,
-                // Block layout handles text wrapping natively in Satori
+              fontFamily: isBrutal ? 'IBMPlexMono' : 'PlayfairDisplayItalic',
+              fontSize: fontSize,
+              fontWeight: 700,
+              fontStyle: isBrutal ? 'normal' : 'italic',
+              color: textCol,
+              lineHeight: 1.35,
+              marginBottom: 60,
+              // Block layout handles text wrapping natively in Satori
             }}>
-                {quote.text}
+              {quote.text}
             </div>
 
-             {/* Accent Line */}
-             <div style={{
-                width: 140,
-                height: 7,
-                backgroundColor: isDark ? '#FFED47' : (isBrutal ? '#000000' : '#FF4B4B'),
-                marginBottom: 54,
-                display: 'flex',
+            {/* Accent Line */}
+            <div style={{
+              width: 140,
+              height: 7,
+              backgroundColor: isDark ? '#FFED47' : (isBrutal ? '#000000' : '#FF4B4B'),
+              marginBottom: 54,
+              display: 'flex',
             }}></div>
 
             {/* Meta (Badge + Date) */}
             <div style={{ display: 'flex', alignItems: 'center' }}>
-                {/* Badge */}
-                <div style={{ display: 'flex', position: 'relative' }}>
-                    {isNeo && (
-                        <div style={{
-                            position: 'absolute',
-                            top: 7, left: 7, right: -7, bottom: -7,
-                            backgroundColor: border,
-                            zIndex: 1,
-                            display: 'flex',
-                        }}></div>
-                    )}
-                    <div style={{
-                        display: 'flex',
-                        backgroundColor: tagBg,
-                        border: isBrutal ? `4px solid ${border}` : 'none',
-                        padding: '16px 26px',
-                        zIndex: 2,
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <span style={{
-                            fontFamily: 'IBMPlexMono',
-                            fontSize: 30,
-                            fontWeight: 700,
-                            color: tagText,
-                            display: 'flex',
-                        }}>
-                            {badgeText}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Date */}
+              {/* Badge */}
+              <div style={{ display: 'flex', position: 'relative' }}>
+                {isNeo && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 7, left: 7, right: -7, bottom: -7,
+                    backgroundColor: border,
+                    zIndex: 1,
+                    display: 'flex',
+                  }}></div>
+                )}
                 <div style={{
-                     fontFamily: 'IBMPlexMonoRegular',
-                     fontSize: 26,
-                     color: mutedText,
-                     marginLeft: 24,
-                     display: 'flex',
+                  display: 'flex',
+                  backgroundColor: tagBg,
+                  border: isBrutal ? `4px solid ${border}` : 'none',
+                  padding: '16px 26px',
+                  zIndex: 2,
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
-                    {dateStr}
+                  <span style={{
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 30,
+                    fontWeight: 700,
+                    color: tagText,
+                    display: 'flex',
+                  }}>
+                    {badgeText}
+                  </span>
                 </div>
+              </div>
+
+              {/* Date */}
+              <div style={{
+                fontFamily: 'IBMPlexMonoRegular',
+                fontSize: 26,
+                color: mutedText,
+                marginLeft: 24,
+                display: 'flex',
+              }}>
+                {dateStr}
+              </div>
             </div>
 
           </div>
 
           {/* Footer */}
           <div style={{
-              position: 'absolute',
-              bottom: 110,
-              left: 0,
-              right: 0,
-              display: 'flex',
-              justifyContent: 'center',
-              fontFamily: 'IBMPlexMono',
-              fontSize: 24,
-              color: mutedText,
-              zIndex: 10
+            position: 'absolute',
+            bottom: 110,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            fontFamily: 'IBMPlexMono',
+            fontSize: 24,
+            color: mutedText,
+            zIndex: 10
           }}>
-              daily-brutal-quotes.vercel.app
+            daily-brutal-quotes.vercel.app
           </div>
 
         </div>
