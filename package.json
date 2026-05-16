@@ -1,0 +1,27 @@
+{
+  "name": "daily-brutal-quotes",
+  "version": "1.0.0",
+  "description": "A daily motivational quote system with iPhone lock screen wallpaper generation via API.",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.68",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "quotes",
+    "motivation",
+    "neobrutalism",
+    "wallpaper",
+    "iphone",
+    "shortcuts",
+    "vercel"
+  ],
+  "license": "MIT"
+}

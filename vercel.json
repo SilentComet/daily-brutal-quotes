@@ -1,0 +1,48 @@
+{
+  "version": 2,
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": "public",
+  "installCommand": "npm install",
+  "functions": {
+    "api/image.js": {
+      "includeFiles": "public/fonts/**"
+    },
+    "api/wallpaper.js": {
+      "includeFiles": "public/fonts/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/quote",
+      "destination": "/api/quote.js"
+    },
+    {
+      "source": "/api/image",
+      "destination": "/api/image.js"
+    },
+    {
+      "source": "/api/wallpaper",
+      "destination": "/api/wallpaper.js"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, OPTIONS"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ]
+}
