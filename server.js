@@ -26,6 +26,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // ── API routes ────────────────────────────────────────────────────────────────
 app.get("/api/quote", quoteHandler);
 app.get("/api/image", imageHandler);
+app.get("/api/wallpaper", imageHandler);
 
 // ── Catch-all → index.html (SPA fallback) ─────────────────────────────────────
 app.get("*", (req, res) => {
