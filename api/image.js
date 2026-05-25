@@ -4,25 +4,19 @@ const fs = require('fs');
 const { getQuoteOfTheDay, getQuoteByNumber } = require('../lib/quotes');
 
 // ── Font registration ──────────────────────────────────────────────────────
-const FONTS_DIR = path.join(__dirname, '..', 'public', 'fonts');
-const FONT = 'IBM Plex Mono';
+// Load embedded Base64 fonts to avoid Vercel Lambda path resolution issues
+const { IBMPlexMonoBold, IBMPlexMonoRegular, PlayfairDisplayItalic } = require('../lib/fonts');
 
 try {
-  const fonts = [
-    ['IBMPlexMono-Regular.ttf', 'IBM Plex Mono'],
-    ['IBMPlexMono-Bold.ttf', 'IBM Plex Mono'],
-    ['PlayfairDisplay-Italic.ttf', 'Playfair Display'],
-  ];
-
-  for (const [file, family] of fonts) {
-    const fontPath = path.join(FONTS_DIR, file);
-    if (fs.existsSync(fontPath)) {
-      GlobalFonts.registerFromPath(fontPath, family);
-    }
-  }
+  GlobalFonts.register(IBMPlexMonoRegular, 'IBM Plex Mono');
+  GlobalFonts.register(IBMPlexMonoBold, 'IBM Plex Mono');
+  GlobalFonts.register(PlayfairDisplayItalic, 'Playfair Display');
 } catch (err) {
   console.warn('Font load failed, using fallback:', err.message);
 }
+
+const FONT_MONO = '"IBM Plex Mono", monospace';
+const FONT_SERIF = '"Playfair Display", serif';
 
 // ── Word wrap helper ───────────────────────────────────────────────────────
 function wrapText(ctx, text, maxWidth) {
@@ -90,7 +84,7 @@ module.exports = async function handler(req, res) {
 
     // Quote number
     ctx.fillStyle = accent;
-    ctx.font = `bold 48px "${FONT}"`;
+    ctx.font = `bold 48px ${FONT_MONO}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     ctx.fillText(`#${String(quote.number).padStart(3, '0')}`, 100, 300);
@@ -101,11 +95,11 @@ module.exports = async function handler(req, res) {
 
     // Quote text — centred vertically
     ctx.fillStyle = fg;
-    ctx.font = `bold 72px "${FONT}"`;
+    ctx.font = isBrutal ? `bold 72px ${FONT_MONO}` : `italic bold 72px ${FONT_SERIF}`;
     ctx.textAlign = 'left';
 
     const lines = wrapText(ctx, quote.text, W - 200);
-    const lineHeight = 100;
+    const lineHeight = isBrutal ? 100 : 96;
     let y = (H - lines.length * lineHeight) / 2;
 
     for (const line of lines) {
@@ -114,9 +108,12 @@ module.exports = async function handler(req, res) {
     }
 
     // Date label
-    const label = date || new Date().toISOString().split('T')[0];
+    const dateStr = quote.date;
+    const label = new Date(dateStr + "T00:00:00Z").toLocaleDateString("en-US", {
+      year: "numeric", month: "long", day: "numeric", timeZone: "UTC",
+    });
     ctx.fillStyle = isDark ? 'rgba(240,240,240,0.4)' : 'rgba(0,0,0,0.35)';
-    ctx.font = `32px "${FONT}"`;
+    ctx.font = `32px ${FONT_MONO}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     ctx.fillText(label, W / 2, H - 120);
